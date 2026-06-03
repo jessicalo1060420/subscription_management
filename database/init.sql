@@ -1,32 +1,31 @@
-CREATE TABLE users(
-    user_id int AUTO_INCREMENT PRIMARY KEY,
-    user_name varchar(100) not null,
-    user_email varchar(100)
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    user_name VARCHAR(100) NOT NULL,
+    user_email VARCHAR(100)
 );
 
-CREATE TABLE categories(
-    category_id int AUTO_INCREMENT PRIMARY KEY,
-    category_name varchar(100) not null
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE subscriptions(
-    subscription_id int AUTO_INCREMENT PRIMARY KEY,
-    user_id int ,
-    category_id int,
-    service_name varchar(100) not null,
-    plan_name varchar(100) not null,
-    status varchar(100),--有付、沒付、已停止
-    start_date date,
-    foreign key (user_id) references users(user_id),
-    foreign key (category_id) references categories(category_id),
+CREATE TABLE subscriptions (
+    subscription_id SERIAL PRIMARY KEY,
+    user_id INT,
+    category_id INT,
+    service_name VARCHAR(100) NOT NULL,
+    plan_name VARCHAR(100) NOT NULL,
+    status VARCHAR(100), -- 有付、沒付、已停止
+    start_date DATE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
 
-CREATE TABLE payments(
-    payment_id int AUTO_INCREMENT PRIMARY KEY,
-    subscription_id int,
-    price int not null,
-    billing_cycle int ,
-    payment_day int not null,
-    foreign key (subscription_id) references subscriptions(subscription_id)
-
+CREATE TABLE payments (
+    payment_id SERIAL PRIMARY KEY,
+    subscription_id INT,
+    price INT NOT NULL,
+    billing_cycle INT,
+    payment_day INT NOT NULL,
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id)
 );
