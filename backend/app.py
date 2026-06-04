@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app,origins=["http://localhost:5174", "http://127.0.0.1:5174"])
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
