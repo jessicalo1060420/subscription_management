@@ -19,8 +19,8 @@ def home():
     return "Subscription backend is running"
 
 # 查詢所有訂閱
-@app.route("/subscriptions", methods=["GET"])
-def get_subscriptions():
+@app.route("/subscriptions/<int:user_id>", methods=["GET"])
+def get_subscriptions(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -38,8 +38,9 @@ def get_subscriptions():
         FROM subscriptions s
         LEFT JOIN categories c ON s.category_id = c.category_id
         LEFT JOIN payments p ON s.subscription_id = p.subscription_id
+        WHERE s.user_id = %s
         ORDER BY s.subscription_id;
-    """)
+    """,(user_id,))
 
     rows = cur.fetchall()
     cur.close()
@@ -68,6 +69,7 @@ def add_subscription():
 
     conn = get_db_connection()
     cur = conn.cursor()
+    start_date = data.get("start_date")
     if start_date == "":
             start_date = None
     cur.execute("""
@@ -81,7 +83,7 @@ def add_subscription():
         data.get("service_name"),
         data.get("plan_name"),
         data.get("status"),
-        data.get("start_date")
+        start_date
     )
     )
     subscription_id = cur.fetchone()[0]
@@ -111,7 +113,8 @@ def update_subscription(subscription_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
-
+    if start_date == "":
+            start_date = None
     cur.execute("""
         UPDATE subscriptions
         SET service_name=%s,
@@ -162,6 +165,68 @@ def delete_subscription(subscription_id):
     conn.close()
 
     return jsonify({"message": "刪除成功"})
+#註冊
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO users (user_name, user_email, user_password)
+        VALUES (%s, %s, %s)
+        RETURNING user_id;
+    """, (
+        data.get("user_name"),
+        data.get("user_email"),
+        data.get("user_password")
+    ))
+
+    user_id = cur.fetchone()[0]
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "message": "註冊成功",
+        "user_id": user_id
+    }), 201
+
+#登入
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT user_id, user_name, user_email
+        FROM users
+        WHERE user_name = %s AND user_password = %s;
+    """, (
+        data.get("user_name"),
+        data.get("user_password")
+    ))
+
+    user = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if user:
+        return jsonify({
+            "message": "登入成功",
+            "user_id": user[0],
+            "user_name": user[1],
+            "user_email": user[2]
+        })
+
+    return jsonify({
+        "message": "帳號或密碼錯誤"
+    }), 401
 
 if __name__ == "__main__":
     app.run(debug=True)

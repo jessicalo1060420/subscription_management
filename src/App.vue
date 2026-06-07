@@ -4,52 +4,88 @@
   <div class="page">
     <h1>訂閱管理系統</h1>
 
-    <button @click="currentPage = 'form'">新增訂閱</button>
-    <button @click="currentPage = 'list'">訂閱清單</button>
+    <div v-if="!currentUser">
+      <LoginForm
+        v-if="currentPage === 'login'"
+        :loginForm="loginForm"
+        @login="login"
+        @go-register="currentPage = 'register'"
+      />
 
-    <SubscriptionForm
-      v-if="currentPage === 'form'"
-      :form="form"
-      :isEditing="isEditing"
-      @submit-form="submitForm"
-      @cancel-edit="cancelEdit"
-    />
+      <RegisterForm
+        v-if="currentPage === 'register'"
+        :registerForm="registerForm"
+        @register="register"
+        @go-login="currentPage = 'login'"
+      />
+    </div>
 
-    <SubscriptionList
-      v-if="currentPage === 'list'"
-      :subscriptions="subscriptions"
-      :sortedSubscriptions="sortedSubscriptions"
-      :totalPrice="totalPrice"
-      :sortBy="sortBy"
-      @update-sort="sortBy = $event"
-      @edit-item="editItem"
-      @delete-item="deleteItem"
-    />
+    <div v-else>
+      <p>目前使用者：{{ currentUser.user_name }}</p>
+
+      <button @click="currentPage = 'form'">新增訂閱</button>
+      <button @click="currentPage = 'list'">訂閱清單</button>
+      <button class="cancel" @click="logout">登出</button>
+
+      <SubscriptionForm
+        v-if="currentPage === 'form'"
+        :form="form"
+        :isEditing="isEditing"
+        @submit-form="submitForm"
+        @cancel-edit="cancelEdit"
+      />
+
+      <SubscriptionList
+        v-if="currentPage === 'list'"
+        :subscriptions="subscriptions"
+        :sortedSubscriptions="sortedSubscriptions"
+        :totalPrice="totalPrice"
+        :sortBy="sortBy"
+        @update-sort="sortBy = $event"
+        @edit-item="editItem"
+        @delete-item="deleteItem"
+      />
+    </div>
   </div>
 </template>
 <script>
 import SubscriptionForm from "./components/SubscriptionForm.vue";
 import SubscriptionList from "./components/SubscriptionList.vue";
+import LoginForm from "./components/LoginForm.vue";
+import RegisterForm from "./components/RegisterForm.vue";
 const API_URL = "http://127.0.0.1:5000";
 
 export default {
   data() {
     return {
+      currentPage: "login",
+      currentUser: null,
+
+      loginForm: {
+        user_name: "",
+        user_password: ""
+      },
+
+      registerForm: {
+        user_name: "",
+        user_email: "",
+        user_password: ""
+      },
       subscriptions: [],
       isEditing: false,
       editingId: null,
       sortBy: "newest",
-      currentPage: "form",
+      
 
       form: {
-        user_id: 1,
+        user_id: null,
         category_id: 1,
         service_name: "",
         plan_name: "",
         status: "已付款",
         start_date: "",
         price: null,
-        billing_cycle: "月繳",
+        billing_cycle: 30,
         payment_day: ""
         
       }
@@ -95,20 +131,71 @@ export default {
   
   components: {
     SubscriptionForm,
-    SubscriptionList
+    SubscriptionList,
+    LoginForm,
+    RegisterForm
   },
 
+  
   mounted() {
-    this.getSubscriptions();
+    if (this.currentUser) {
+      this.getSubscriptions();
+    }
   },
 
   methods: {
     async getSubscriptions() {
-      const res = await fetch(`${API_URL}/subscriptions`);
+      if (!this.currentUser) {
+        return;
+      }
+      const res = await fetch(`${API_URL}/subscriptions/${this.currentUser.user_id}`);
       this.subscriptions = await res.json();
     },
+    async login() {
+      const res = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(this.loginForm)
+      });
 
+      const data = await res.json();
+
+      if (res.ok) {
+        this.currentUser = data;
+        this.form.user_id = data.user_id;
+        this.currentPage = "list";
+        this.getSubscriptions();
+      } else {
+        alert(data.message);
+      }
+    },
+    async register() {
+      const res = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(this.registerForm)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("註冊成功，請登入");
+        this.currentPage = "login";
+      } else {
+        alert("註冊失敗");
+      }
+    },
     async submitForm() {
+      if (!this.currentUser) {
+        alert("請先登入");
+        this.currentPage = "login";
+        return;
+      }
+      this.form.user_id = this.currentUser.user_id;
       if (this.isEditing) {
         await fetch(`${API_URL}/subscriptions/${this.editingId}`, {
           method: "PUT",
@@ -129,14 +216,20 @@ export default {
 
       this.resetForm();
       this.getSubscriptions();
+      this.currentPage = "list";
     },
-
+    logout() {
+      this.currentUser = null;
+      this.currentPage = "login";
+      this.subscriptions = [];
+      this.resetForm();
+    },
     editItem(item) {
       this.isEditing = true;
       this.editingId = item.subscription_id;
 
       this.form = {
-        user_id: 1,
+        user_id: this.currentUser.user_id,
         category_id: 1,
         service_name: item.service_name,
         plan_name: item.plan_name,
@@ -146,6 +239,7 @@ export default {
         billing_cycle: item.billing_cycle,
         payment_day: item.payment_day
       };
+      this.currentPage = "form";
     },
 
     async deleteItem(id) {
@@ -167,7 +261,7 @@ export default {
       this.editingId = null;
 
       this.form = {
-        user_id: 1,
+        user_id: this.currentUser ? this.currentUser.user_id : null,
         category_id: 1,
         service_name: "",
         plan_name: "",
@@ -291,5 +385,12 @@ th {
 .form-row select {
   flex: 1;
   padding: 8px;
+}
+.chart-box {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+  max-width: 500px;
 }
 </style>

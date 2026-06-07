@@ -44,7 +44,7 @@
   </div>
 
   <div class="form-row">
-    <label>*扣款日期</label>
+    <label>*下次扣款日</label>
     <input v-model="form.payment_day" type="date"/>
   </div>
 
@@ -62,7 +62,7 @@
     </select>
   </div>
 
-  <button @click="submitForm">
+  <button @click="$emit('submit-form')">
     {{ isEditing ? "儲存修改" : "新增" }}
   </button>
 

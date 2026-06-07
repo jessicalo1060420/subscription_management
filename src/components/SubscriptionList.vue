@@ -3,6 +3,10 @@
       <p>訂閱數量：{{ subscriptions.length }}</p>
       <p>每月總金額：約 NT$ {{ totalPrice }}</p>
 </div>
+<div class="chart-box">
+      <h2>類別花費比例</h2>
+      <Pie :data="categoryChartData" :options="chartOptions" />
+</div>
 <div class="form-row">
   <label>排序方式</label>
   <select 
@@ -25,7 +29,7 @@
           <th>類別</th>
           <th>價格</th>
           <th>週期</th>
-          <th>扣款日</th>
+          <th>下次扣款日</th>
           <th>狀態</th>
           <th>開始日期</th>
           <th>操作</th>
@@ -39,7 +43,7 @@
           <td>{{ item.category_name }}</td>
           <td>NT$ {{ item.price }}</td>
           <td>{{ item.billing_cycle }} 天</td>
-          <td>每月 {{ item.payment_day }} 號</td>
+          <td>{{ item.payment_day ? new Date(item.payment_day).toISOString().split("T")[0] : "" }}</td>
           <td>{{ item.status }}</td>
           <td>{{ item.start_date }}</td>
           <td>
@@ -52,7 +56,22 @@
   
 </template>
 <script>
+import { Pie } from "vue-chartjs";
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from "chart.js";
+
+ChartJS.register(Title, Tooltip, Legend, ArcElement);
+
 export default {
+  components: {
+    Pie
+  },
+
   props: {
     subscriptions: Array,
     sortedSubscriptions: Array,
@@ -60,10 +79,55 @@ export default {
     sortBy: String
   },
 
-  emits: [
-    "update-sort",
-    "edit-item",
-    "delete-item"
-  ]
+  emits: ["update-sort", "edit-item", "delete-item"],
+
+  computed: {
+    categoryChartData() {
+      const categoryMap = {};
+
+      this.subscriptions.forEach((item) => {
+        const category = item.category_name || "其他";
+        const price = Number(item.price || 0);
+        const cycle = Number(item.billing_cycle || 1);
+        const monthlyPrice = price * (30 / cycle);
+
+        if (!categoryMap[category]) {
+          categoryMap[category] = 0;
+        }
+
+        categoryMap[category] += monthlyPrice;
+      });
+
+      return {
+        labels: Object.keys(categoryMap),
+        datasets: [
+          {
+            data: Object.values(categoryMap),
+            backgroundColor: [
+            "#FF6384",
+            "#36A2EB",
+            "#FFCE56",
+            "#4BC0C0",
+            "#9966FF",
+            "#FF9F40"
+          ],
+          borderWidth: 1
+          }
+        ]
+      };
+    },
+
+    chartOptions() {
+      return {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: "bottom"
+          }
+        }
+      };
+    }
+  }
 };
+
 </script>
