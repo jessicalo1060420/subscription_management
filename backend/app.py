@@ -68,7 +68,8 @@ def add_subscription():
 
     conn = get_db_connection()
     cur = conn.cursor()
-
+    if start_date == "":
+            start_date = None
     cur.execute("""
         INSERT INTO subscriptions 
         (user_id, category_id, service_name, plan_name, status, start_date)
@@ -81,9 +82,10 @@ def add_subscription():
         data.get("plan_name"),
         data.get("status"),
         data.get("start_date")
-    ))
-
+    )
+    )
     subscription_id = cur.fetchone()[0]
+    
 
     cur.execute("""
         INSERT INTO payments

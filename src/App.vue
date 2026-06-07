@@ -1,114 +1,35 @@
+
+
 <template>
   <div class="page">
-    <h1>訂閱服務與扣款管理系統</h1>
+    <h1>訂閱管理系統</h1>
 
-    <div class="form">
-  <h2>{{ isEditing ? "修改訂閱" : "新增訂閱" }}</h2>
+    <button @click="currentPage = 'form'">新增訂閱</button>
+    <button @click="currentPage = 'list'">訂閱清單</button>
 
-  <div class="form-row">
-    <label>*服務名稱</label>
-    <input v-model="form.service_name" placeholder="例如：Netflix" />
-  </div>
+    <SubscriptionForm
+      v-if="currentPage === 'form'"
+      :form="form"
+      :isEditing="isEditing"
+      @submit-form="submitForm"
+      @cancel-edit="cancelEdit"
+    />
 
-  <div class="form-row">
-    <label>*方案名稱</label>
-    <input v-model="form.plan_name" placeholder="例如：Premium" />
-  </div>
-
-  <div class="form-row">
-    <label>*類別名稱</label>
-    <select v-model.number="form.category_id">
-      <option value="1">影音</option>
-      <option value="2">音樂</option>
-      <option value="3">雲端</option>
-      <option value="4">AI工具</option>
-    </select>
-  </div>
-
-  <div class="form-row">
-    <label>*價格</label>
-    <input v-model.number="form.price" />
-  </div>
-
-  <div class="form-row">
-    <label>扣款週期</label>
-    <input v-model.number="form.billing_cycle" placeholder="每週＝7;每月＝30;每年＝365 "/>
-  </div>
-
-  <div class="form-row">
-    <label>*扣款日期</label>
-    <input v-model.number="form.payment_day" type="date"/>
-  </div>
-
-  <div class="form-row">
-    <label>開始日期</label>
-    <input v-model="form.start_date" type="date" />
-  </div>
-
-  <div class="form-row">
-    <label>*狀態</label>
-    <select v-model="form.status">
-      <option value="已付款">已付款</option>
-      <option value="未付款">未付款</option>
-      <option value="已停止">已停止</option>
-    </select>
-  </div>
-
-  <button @click="submitForm">
-    {{ isEditing ? "儲存修改" : "新增" }}
-  </button>
-
-  <button
-    v-if="isEditing"
-    class="cancel"
-    @click="cancelEdit"
-  >
-    取消修改
-  </button>
-  
-</div>
-<div class="summary">
-      <p>訂閱數量：{{ subscriptions.length }}</p>
-      <p>每月總金額：約 NT$ {{ totalPrice }}</p>
-</div>
-    <h2>訂閱清單</h2>
-
-    <table>
-      <thead>
-        <tr>
-          <th>服務</th>
-          <th>方案</th>
-          <th>類別</th>
-          <th>價格</th>
-          <th>週期</th>
-          <th>扣款日</th>
-          <th>狀態</th>
-          <th>開始日期</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr v-for="item in subscriptions" :key="item.subscription_id">
-          <td>{{ item.service_name }}</td>
-          <td>{{ item.plan_name }}</td>
-          <td>{{ item.category_name }}</td>
-          <td>NT$ {{ item.price }}</td>
-          <td>{{ item.billing_cycle }} 天</td>
-          <td>每月 {{ item.payment_day }} 號</td>
-          <td>{{ item.status }}</td>
-          <td>{{ item.start_date }}</td>
-          <td>
-            <button @click="editItem(item)">修改</button>
-            <button class="delete" @click="deleteItem(item.subscription_id)">刪除</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <SubscriptionList
+      v-if="currentPage === 'list'"
+      :subscriptions="subscriptions"
+      :sortedSubscriptions="sortedSubscriptions"
+      :totalPrice="totalPrice"
+      :sortBy="sortBy"
+      @update-sort="sortBy = $event"
+      @edit-item="editItem"
+      @delete-item="deleteItem"
+    />
   </div>
 </template>
-
 <script>
+import SubscriptionForm from "./components/SubscriptionForm.vue";
+import SubscriptionList from "./components/SubscriptionList.vue";
 const API_URL = "http://127.0.0.1:5000";
 
 export default {
@@ -117,6 +38,9 @@ export default {
       subscriptions: [],
       isEditing: false,
       editingId: null,
+      sortBy: "newest",
+      currentPage: "form",
+
       form: {
         user_id: 1,
         category_id: 1,
@@ -125,8 +49,9 @@ export default {
         status: "已付款",
         start_date: "",
         price: null,
-        billing_cycle: null,
+        billing_cycle: "月繳",
         payment_day: ""
+        
       }
     };
   },
@@ -134,9 +59,43 @@ export default {
   computed: {
     totalPrice() {
       return this.subscriptions.reduce((sum, item) => {
-        return sum + Number(item.price || 0);
+        const price = Number(item.price || 0);
+        const cycle = Number(item.billing_cycle || 1);
+
+        const monthlyPrice = price * (30 / cycle);
+
+        return sum + monthlyPrice;
       }, 0);
+    },
+    sortedSubscriptions() {
+    const list = [...this.subscriptions];
+
+    switch (this.sortBy) {
+      case "newest":
+        return list.sort((a, b) => b.subscription_id - a.subscription_id);
+
+      case "oldest":
+        return list.sort((a, b) => a.subscription_id - b.subscription_id);
+
+      case "category":
+        return list.sort((a, b) =>
+          (a.category_name || "").localeCompare(b.category_name || "")
+        );
+
+      case "payment":
+        return list.sort((a, b) =>
+          (a.payment_day || 99) - (b.payment_day || 99)
+        );
+
+      default:
+        return list;
     }
+  }
+  },
+  
+  components: {
+    SubscriptionForm,
+    SubscriptionList
   },
 
   mounted() {

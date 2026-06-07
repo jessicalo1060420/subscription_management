@@ -14,7 +14,7 @@ CREATE TABLE subscriptions (
     user_id INT,
     category_id INT,
     service_name VARCHAR(100) NOT NULL,
-    plan_name VARCHAR(100) NOT NULL,
+    plan_name VARCHAR(100) ,
     status VARCHAR(100), -- 有付、沒付、已停止
     start_date DATE,
     FOREIGN KEY (user_id) REFERENCES users(user_id),
@@ -26,6 +26,6 @@ CREATE TABLE payments (
     subscription_id INT,
     price INT NOT NULL,
     billing_cycle INT,
-    payment_day INT NOT NULL,
+    payment_day INT ,
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id)
 );
