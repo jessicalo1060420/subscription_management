@@ -21,12 +21,18 @@
     </div>
 
     <div v-else>
-      <p>目前使用者：{{ currentUser.user_name }}</p>
+      <div class="top-bar">
+        <div class="user-info">
+          <span>目前使用者</span>
+          <strong>{{ currentUser.user_name }}</strong>
+        </div>
 
-      <button @click="currentPage = 'form'">新增訂閱</button>
-      <button @click="currentPage = 'list'">訂閱清單</button>
-      <button class="cancel" @click="logout">登出</button>
-
+        <div class="nav-buttons">
+          <button @click="currentPage = 'form'">新增訂閱</button>
+          <button @click="currentPage = 'list'">訂閱清單</button>
+          <button class="cancel" @click="logout">登出</button>
+        </div>
+      </div>
       <SubscriptionForm
         v-if="currentPage === 'form'"
         :form="form"
@@ -82,8 +88,6 @@ export default {
         category_id: 1,
         service_name: "",
         plan_name: "",
-        status: "已付款",
-        start_date: "",
         price: null,
         billing_cycle: 30,
         payment_day: ""
@@ -94,14 +98,14 @@ export default {
 
   computed: {
     totalPrice() {
-      return this.subscriptions.reduce((sum, item) => {
+      const total = this.subscriptions.reduce((sum, item) => {
         const price = Number(item.price || 0);
         const cycle = Number(item.billing_cycle || 1);
 
-        const monthlyPrice = price * (30 / cycle);
-
-        return sum + monthlyPrice;
+        return sum + price * (30 / cycle);
       }, 0);
+
+      return Math.round(total);
     },
     sortedSubscriptions() {
     const list = [...this.subscriptions];
@@ -233,8 +237,6 @@ export default {
         category_id: 1,
         service_name: item.service_name,
         plan_name: item.plan_name,
-        status: item.status,
-        start_date: item.start_date,
         price: item.price,
         billing_cycle: item.billing_cycle,
         payment_day: item.payment_day
@@ -265,8 +267,6 @@ export default {
         category_id: 1,
         service_name: "",
         plan_name: "",
-        status: "有付",
-        start_date: "",
         price: null,
         billing_cycle: 30,
         payment_day: null
@@ -280,117 +280,185 @@ export default {
 body {
   margin: 0;
   font-family: Arial, "Microsoft JhengHei", sans-serif;
-  background: #f4f6f8;
+  background: #f7f7f7;
+  color: #222;
 }
 
 .page {
   max-width: 1100px;
-  margin: 30px auto;
-  padding: 20px;
+  margin: 0px auto;
+  padding: 24px;
 }
 
 h1 {
   text-align: center;
-  color: #2c3e50;
+  font-size: 28px;
+  font-weight: 500;
+  color: #222;
+  margin-bottom: 32px;
 }
+
 h2 {
   text-align: center;
-  color: #2c3e50;
+  font-size: 22px;
+  font-weight: 500;
+  color: #222;
+}
+
+p {
+  color: #333;
 }
 
 .summary {
   display: flex;
-  gap: 20px;
-  margin: 20px 0;
+  gap: 16px;
+  margin: 24px 0;
 }
 
 .summary p {
-  background: white;
-  padding: 16px;
-  border-radius: 10px;
   flex: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 0;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .form {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
+  background: #fff;
+  padding: 32px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
   margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  
+  box-shadow: none;
 }
 
 input,
 select {
   display: block;
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
   margin: 8px 0;
   box-sizing: border-box;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  outline: none;
+}
+
+input::placeholder {
+  color: #999;
+}
+
+input:focus,
+select:focus {
+  border-color: #888;
 }
 
 button {
-  padding: 8px 14px;
+  padding: 9px 14px;
   margin: 4px;
-  border: none;
-  border-radius: 6px;
-  background: #3498db;
-  color: white;
+  border: 1px solid #222;
+  border-radius: 8px;
+  background: #222;
+  color: #fff;
   cursor: pointer;
+}
+
+.cancel,
+.delete {
+  background: #fff;
+  color: #222;
 }
 
 button:hover {
   opacity: 0.85;
 }
 
-.delete {
-  background: #e74c3c;
-}
-
-.cancel {
-  background: #7f8c8d;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: none;
 }
 
 th,
 td {
-  padding: 12px;
-  border-bottom: 1px solid #ddd;
+  padding: 14px 12px;
+  border-bottom: 1px solid #eee;
   text-align: center;
+  color: #222;
 }
 
 th {
-  background: #2c3e50;
-  color: white;
+  background: #f7f7f7;
+  color: #333;
+  font-weight: 500;
 }
+
 .form-row {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .form-row label {
   width: 120px;
-  font-weight: bold;
+  font-weight: 400;
+  color: #444;
 }
 
 .form-row input,
 .form-row select {
   flex: 1;
-  padding: 8px;
 }
+
 .chart-box {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin: 20px 0;
+  background: #fff;
+  padding: 28px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  margin: 24px 0;
   max-width: 500px;
+  box-shadow: none;
+}
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-info span {
+  font-size: 13px;
+  color: #777;
+}
+
+.user-info strong {
+  font-size: 18px;
+  font-weight: 500;
+  color: #222;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-buttons button {
+  margin: 0;
 }
 </style>

@@ -1,7 +1,8 @@
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     user_name VARCHAR(100) NOT NULL,
-    user_email VARCHAR(100)
+    user_email VARCHAR(100) NOT NULL UNIQUE,
+    user_password VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE categories (
@@ -15,8 +16,6 @@ CREATE TABLE subscriptions (
     category_id INT,
     service_name VARCHAR(100) NOT NULL,
     plan_name VARCHAR(100) ,
-    status VARCHAR(100), -- 有付、沒付、已停止
-    start_date DATE,
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (category_id) REFERENCES categories(category_id)
 );
@@ -26,6 +25,6 @@ CREATE TABLE payments (
     subscription_id INT,
     price INT NOT NULL,
     billing_cycle INT,
-    payment_day INT ,
+    payment_day date ,
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id)
 );

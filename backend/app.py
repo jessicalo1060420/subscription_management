@@ -29,8 +29,6 @@ def get_subscriptions(user_id):
             s.subscription_id,
             s.service_name,
             s.plan_name,
-            s.status,
-            s.start_date,
             c.category_name,
             p.price,
             p.billing_cycle,
@@ -52,12 +50,10 @@ def get_subscriptions(user_id):
             "subscription_id": row[0],
             "service_name": row[1],
             "plan_name": row[2],
-            "status": row[3],
-            "start_date": str(row[4]),
-            "category_name": row[5],
-            "price": row[6],
-            "billing_cycle": row[7],
-            "payment_day": row[8]
+            "category_name": row[3],
+            "price": row[4],
+            "billing_cycle": row[5],
+            "payment_day": row[6]       
         })
 
     return jsonify(data)
@@ -74,16 +70,15 @@ def add_subscription():
             start_date = None
     cur.execute("""
         INSERT INTO subscriptions 
-        (user_id, category_id, service_name, plan_name, status, start_date)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        (user_id, category_id, service_name, plan_name)
+        VALUES (%s, %s, %s, %s)
         RETURNING subscription_id;
     """, (
         data.get("user_id"),
         data.get("category_id"),
         data.get("service_name"),
         data.get("plan_name"),
-        data.get("status"),
-        start_date
+        
     )
     )
     subscription_id = cur.fetchone()[0]
@@ -113,21 +108,15 @@ def update_subscription(subscription_id):
 
     conn = get_db_connection()
     cur = conn.cursor()
-    if start_date == "":
-            start_date = None
     cur.execute("""
         UPDATE subscriptions
         SET service_name=%s,
-            plan_name=%s,
-            status=%s,
-            start_date=%s,
+            plan_name=%s,   
             category_id=%s
         WHERE subscription_id=%s;
     """, (
         data.get("service_name"),
         data.get("plan_name"),
-        data.get("status"),
-        data.get("start_date"),
         data.get("category_id"),
         subscription_id
     ))
